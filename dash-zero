@@ -1,0 +1,54 @@
+#!/bin/sh
+# libpcreposix only, jemalloc, libatomic
+# PC Files???
+
+set -xe
+hash make nproc
+
+_CC=$(readlink -f $(which ${CC:-cc}))
+
+echo ___COMPILER___
+$_CC --version
+
+#export CFLAGS='-march=native -O3 -pipe'
+
+#echo Checking whether the compiler supports “-fstack-protector-strong”…
+#echo 'int main(){}' | $_CC -fsyntax-only -fstack-protector-strong -xc - && CFLAGS="$CFLAGS -fstack-protector-strong"
+#echo
+
+echo Detecting which compiler is under use…
+case $(basename $_CC) in
+	clang*)_CC=clang && CFLAGS="$CFLAGS -Wno-unused-command-line-argument";;
+	*gcc*) _CC=gcc   ;; # Asterix at start: x86_64-linux-gnu-gcc-8
+	*) echo Unsupported compiler \`$_CC\' && false
+esac
+
+_root=$PWD
+
+cd deps
+
+# Gathering all the dependencies
+# EPOLLEXCLUSIVE not available : Linux4.5 / glibc2.24
+# reuseport is available : Linux3.9+
+
+# MUSL
+cd musl
+#sed -i 's|-std=c99|-std=c11|' Makefile
+./configure --prefix=/opt --enable-wrapper=$_CC #--enable-warnings
+make -j`nproc` --silent install
+cd -
+
+# Headers are required for LibreSSL & nginx
+cd kernel-headers
+make -j`nproc` ARCH=x86_64 DESTDIR=/opt prefix= install
+cd -
+
+export CC=/opt/bin/musl-$_CC
+#LDFLAGS=-static
+
+cd dash
+./autogen.sh
+./configure
+# --enable-static --enable-fnmatch --enable-glob
+make -j`nproc`
+cd -

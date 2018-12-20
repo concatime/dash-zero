@@ -1,0 +1,9 @@
+[submodule "deps/kernel-headers"]
+	path = deps/kernel-headers
+	url = https://github.com/sabotage-linux/kernel-headers.git
+[submodule "deps/musl"]
+	path = deps/musl
+	url = git://git.musl-libc.org/musl
+[submodule "deps/dash"]
+	path = deps/dash
+	url = https://git.kernel.org/pub/scm/utils/dash/dash.git
